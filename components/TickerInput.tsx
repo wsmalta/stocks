@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { MAX_TICKERS } from '../constants';
+import { ptBR } from '../translations';
 
 interface TickerInputProps {
   onAnalyze: (tickers: string, startDate: string) => void;
@@ -21,21 +22,22 @@ export const TickerInput: React.FC<TickerInputProps> = ({ onAnalyze, initialStar
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label htmlFor="tickers" className="block text-sm font-medium text-sky-300 mb-1">
-          Tickers das Ações (separados por vírgula, máx. {MAX_TICKERS})
+          {ptBR.tickerInputLabel(MAX_TICKERS)}
         </label>
         <input
           type="text"
           id="tickers"
           value={tickers}
           onChange={(e) => setTickers(e.target.value)}
-          placeholder="ex: AAPL, MSFT, GOOG"
+          placeholder="ex: AAPL, MSFT, PETR4, VALE3"
           className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 text-gray-100 placeholder-slate-400"
           disabled={isLoading}
+          aria-label={ptBR.tickerInputLabel(MAX_TICKERS)}
         />
       </div>
       <div>
         <label htmlFor="startDate" className="block text-sm font-medium text-sky-300 mb-1">
-          Data de Início
+          {ptBR.startDateLabel}
         </label>
         <input
           type="date"
@@ -45,6 +47,7 @@ export const TickerInput: React.FC<TickerInputProps> = ({ onAnalyze, initialStar
           className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 text-gray-100"
           max={new Date().toISOString().split('T')[0]} // Cannot select future date
           disabled={isLoading}
+          aria-label={ptBR.startDateLabel}
         />
       </div>
       <button
@@ -58,10 +61,10 @@ export const TickerInput: React.FC<TickerInputProps> = ({ onAnalyze, initialStar
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Analisando...
+            {ptBR.analyzingButton}
           </>
         ) : (
-          'Analisar Ações'
+          ptBR.analyzeButton
         )}
       </button>
     </form>

@@ -1,19 +1,17 @@
 
 import { 
-  StockHistoricalData, 
-  StockPricePoint,
   StockFullAnalysis,
+  StockPricePoint,
   TechnicalIndicatorsData,
   FundamentalMetricsData,
   IndividualChartDataPoint,
-  Sentiment,
-  StockSentimentReport,
   MovingAverageData,
-  MACDData,
-  BollingerBandsData
+  BollingerBandsData,
+  AIStockReport, // Using this for the shape of AI data
 } from '../types';
+import { ptBR } from '../translations';
 
-// Helper to calculate Simple Moving Average
+// Helper to calculate Simple Moving Average (remains the same)
 const calculateSMA = (data: number[], period: number): (number | null)[] => {
   if (period <= 0 || data.length < period) {
     return Array(data.length).fill(null);
@@ -26,7 +24,7 @@ const calculateSMA = (data: number[], period: number): (number | null)[] => {
   return sma;
 };
 
-// Helper to calculate Bollinger Bands
+// Helper to calculate Bollinger Bands (remains the same)
 const calculateBollingerBands = (prices: number[], period: number, stdDevMultiplier: number): { middle: (number|null)[], upper: (number|null)[], lower: (number|null)[] } => {
   const smaValues = calculateSMA(prices, period);
   const upperBand: (number | null)[] = [];
@@ -63,12 +61,12 @@ const generateMockTechnicalIndicators = (prices: number[]): TechnicalIndicatorsD
     { period: 50, value: lastSma50 },
   ];
 
-  const rsiValue = Math.floor(Math.random() * (85 - 15 + 1)) + 15; // Random RSI between 15 and 85
+  const rsiValue = Math.floor(Math.random() * (85 - 15 + 1)) + 15;
   let rsiInterpretation = "Neutro";
   if (rsiValue > 70) rsiInterpretation = "Sobrecomprado (Potencial Sinal de Venda)";
   if (rsiValue < 30) rsiInterpretation = "Sobrevendido (Potencial Sinal de Compra)";
 
-  const macdLine = parseFloat(((Math.random() - 0.5) * 5).toFixed(2)); // Random value around 0
+  const macdLine = parseFloat(((Math.random() - 0.5) * 5).toFixed(2));
   const signalLine = parseFloat((macdLine + (Math.random() - 0.5) * 1).toFixed(2));
   const histogram = parseFloat((macdLine - signalLine).toFixed(2));
   let macdInterpretation = "Neutro";
@@ -82,9 +80,8 @@ const generateMockTechnicalIndicators = (prices: number[]): TechnicalIndicatorsD
   };
   let bbInterpretation = "Preço dentro das bandas.";
   const lastPrice = prices[prices.length -1];
-  if(lastBB.upperBand && lastPrice > lastBB.upperBand) bbInterpretation = "Preço rompeu acima da banda superior (Potencial Sobrecompra/Reversão).";
-  if(lastBB.lowerBand && lastPrice < lastBB.lowerBand) bbInterpretation = "Preço rompeu abaixo da banda inferior (Potencial Sobrevenda/Reversão).";
-
+  if(lastBB.upperBand && lastPrice > lastBB.upperBand) bbInterpretation = "Preço rompeu banda superior (Potencial Sobrecompra/Reversão).";
+  if(lastBB.lowerBand && lastPrice < lastBB.lowerBand) bbInterpretation = "Preço rompeu banda inferior (Potencial Sobrevenda/Reversão).";
 
   return {
     smas,
@@ -95,37 +92,41 @@ const generateMockTechnicalIndicators = (prices: number[]): TechnicalIndicatorsD
 };
 
 const generateMockFundamentalMetrics = (ticker: string, lastPrice: number): FundamentalMetricsData => {
-  const marketCapValue = Math.random() * 2000 + 10; // Billions
-  const epsValue = parseFloat((Math.random() * 10 - 2).toFixed(2)); // -2 to 8
+  const marketCapValue = Math.random() * (ticker.match(/[0-9]$/) ? 500 : 2000) + (ticker.match(/[0-9]$/) ? 5 : 10); // Billions, adjusted for potential BR market cap
+  const epsValue = parseFloat((Math.random() * 10 - 2).toFixed(2));
   const peRatioValue = epsValue > 0 ? parseFloat((lastPrice / epsValue).toFixed(2)) : null;
-  const pegRatioValue = peRatioValue ? parseFloat((peRatioValue / (Math.random() * 2 + 0.5)).toFixed(2)) : null; // PEG based on PE
+  const pegRatioValue = peRatioValue ? parseFloat((peRatioValue / (Math.random() * 2 + 0.5)).toFixed(2)) : null;
   const pbRatioValue = parseFloat((Math.random() * 5 + 0.5).toFixed(2));
   const debtToEquityValue = parseFloat((Math.random() * 2).toFixed(2));
   const currentRatioValue = parseFloat((Math.random() * 3 + 0.5).toFixed(2));
-  const roeValue = parseFloat((Math.random() * 30 - 10).toFixed(2)); // -10% to 20%
+  const roeValue = parseFloat((Math.random() * 30 - 10).toFixed(2));
+  const dividendYieldValue = parseFloat((Math.random() * (ticker.match(/[0-9]$/) ? 12 : 5)).toFixed(2)); // Higher potential DY for BR stocks
 
   const companyNames: { [key: string]: string } = {
     "AAPL": "Apple Inc.", "MSFT": "Microsoft Corp.", "GOOG": "Alphabet Inc.", "AMZN": "Amazon.com Inc.",
     "TSLA": "Tesla Inc.", "NVDA": "NVIDIA Corp.", "META": "Meta Platforms Inc.", "JPM": "JPMorgan Chase & Co.",
-    "V": "Visa Inc.", "JNJ": "Johnson & Johnson"
-  }; // Company names can remain in English or be localized if preferred. Here, we keep them mostly as is.
-
+    "V": "Visa Inc.", "JNJ": "Johnson & Johnson",
+    "PETR4": "Petrobras PN", "VALE3": "Vale ON", "ITUB4": "Itaú Unibanco PN", "BBDC4": "Bradesco PN",
+    "MGLU3": "Magazine Luiza ON", "WEGE3": "WEG ON"
+  };
 
   return {
-    companyName: { name: "Nome da Empresa", value: companyNames[ticker] || `${ticker} Inovações`, interpretation: "" },
-    peRatio: { name: "Índice P/L", value: peRatioValue !== null ? peRatioValue : "N/A", interpretation: peRatioValue ? (peRatioValue > 25 ? "Alto (Potencialmente Supervalorizado)" : (peRatioValue < 15 ? "Baixo (Potencialmente Subvalorizado)" : "Valor Justo")) : "N/A devido a LPA negativo/zero" },
-    pegRatio: { name: "Índice PEG", value: pegRatioValue !== null ? pegRatioValue : "N/A", interpretation: pegRatioValue ? (pegRatioValue > 2 ? "Alto (Crescimento pode não justificar P/L)" : (pegRatioValue < 1 ? "Baixo (Potencialmente Subvalorizado para Crescimento)" : "Valor Justo para Crescimento")) : "N/A" },
-    pbRatio: { name: "Índice P/VP", value: pbRatioValue, interpretation: pbRatioValue > 3 ? "Alto (Potencialmente Supervalorizado)" : (pbRatioValue < 1 ? "Baixo (Potencialmente Subvalorizado)" : "Valor Justo") },
-    debtToEquity: { name: "Dívida/Patrimônio Líq.", value: debtToEquityValue, interpretation: debtToEquityValue > 1 ? "Alta Alavancagem (Maior Risco)" : (debtToEquityValue < 0.5 ? "Baixa Alavancagem (Menor Risco)" : "Alavancagem Moderada") },
-    currentRatio: { name: "Liquidez Corrente", value: currentRatioValue, interpretation: currentRatioValue > 2 ? "Forte Liquidez" : (currentRatioValue < 1 ? "Fraca Liquidez (Risco)" : "Liquidez Aceitável") },
-    roe: { name: "ROE (%)", value: roeValue, interpretation: roeValue > 15 ? "Forte Rentabilidade" : (roeValue < 5 ? "Fraca Rentabilidade" : "Rentabilidade Moderada") },
-    eps: { name: "LPA (R$)", value: epsValue, interpretation: epsValue > 0 ? "Lucrativa" : "Não Lucrativa" },
-    marketCap: { name: "Valor de Mercado (Bi)", value: marketCapValue.toFixed(2), interpretation: "Indicador do Tamanho da Empresa" },
+    companyName: { name: "Nome da Empresa", value: companyNames[ticker.toUpperCase()] || `${ticker} Corp S.A.`, interpretation: "" },
+    peRatio: { name: ptBR.peRatio, value: peRatioValue !== null ? peRatioValue : "N/A", interpretation: peRatioValue ? (peRatioValue > 25 ? "Alto (Potencialmente Supervalorizado)" : (peRatioValue < 15 ? "Baixo (Potencialmente Subvalorizado)" : "Valorizado de forma justa")) : "N/A devido a LPA negativo/zero" },
+    pegRatio: { name: ptBR.pegRatio, value: pegRatioValue !== null ? pegRatioValue : "N/A", interpretation: pegRatioValue ? (pegRatioValue > 2 ? "Alto (Crescimento pode não justificar P/L)" : (pegRatioValue < 1 ? "Baixo (Potencialmente Subvalorizado para Crescimento)" : "Valorizado de forma justa para Crescimento")) : "N/A" },
+    pbRatio: { name: ptBR.pbRatio, value: pbRatioValue, interpretation: pbRatioValue > 3 ? "Alto (Potencialmente Supervalorizado)" : (pbRatioValue < 1 ? "Baixo (Potencialmente Subvalorizado)" : "Valorizado de forma justa") },
+    debtToEquity: { name: ptBR.debtToEquity, value: debtToEquityValue, interpretation: debtToEquityValue > 1 ? "Alta Alavancagem (Maior Risco)" : (debtToEquityValue < 0.5 ? "Baixa Alavancagem (Menor Risco)" : "Alavancagem Moderada") },
+    currentRatio: { name: ptBR.currentRatio, value: currentRatioValue, interpretation: currentRatioValue > 2 ? "Forte Liquidez" : (currentRatioValue < 1 ? "Fraca Liquidez (Risco)" : "Liquidez Aceitável") },
+    roe: { name: ptBR.roe, value: roeValue, interpretation: roeValue > 15 ? "Forte Rentabilidade" : (roeValue < 5 ? "Fraca Rentabilidade" : "Rentabilidade Moderada") },
+    eps: { name: ptBR.eps, value: epsValue, interpretation: epsValue > 0 ? "Lucrativa" : "Não Lucrativa" },
+    marketCap: { name: ptBR.marketCap, value: marketCapValue.toFixed(2), interpretation: "Indicador do Tamanho da Empresa" },
+    dividendYield: { name: ptBR.dividendYield, value: dividendYieldValue, interpretation: dividendYieldValue > 5 ? "Alto DY" : (dividendYieldValue > 2 ? "DY Moderado" : "Baixo DY ou Não Paga") },
   };
 };
 
-export const generateMockStockAnalyses = (tickers: string[], startDateStr: string): StockFullAnalysis[] => {
-  const results: StockFullAnalysis[] = [];
+// Generates the base analysis data, AI report will be fetched separately
+export const generateMockStockAnalyses = (tickers: string[], startDateStr: string): Omit<StockFullAnalysis, 'aiReport'>[] => {
+  const results: Omit<StockFullAnalysis, 'aiReport'>[] = [];
   const today = new Date();
   const startDate = new Date(startDateStr);
 
@@ -133,11 +134,14 @@ export const generateMockStockAnalyses = (tickers: string[], startDateStr: strin
     return []; 
   }
   
-  tickers.forEach(ticker => {
+  tickers.forEach(tickerInput => {
+    const ticker = tickerInput.toUpperCase();
     const historicalPricePoints: StockPricePoint[] = [];
     const pricesOnly: number[] = [];
     let currentDate = new Date(startDate);
-    let lastPrice = 50 + Math.random() * 200; 
+    // Adjust starting price based on typical ranges (e.g., BR stocks often lower nominal value than US giants)
+    let lastPrice = ticker.match(/[0-9]$/) ? (10 + Math.random() * 90) : (50 + Math.random() * 350); 
+
 
     while (currentDate <= today) {
       const currentPriceNum = parseFloat(lastPrice.toFixed(2));
@@ -149,7 +153,7 @@ export const generateMockStockAnalyses = (tickers: string[], startDateStr: strin
       
       const changePercent = (Math.random() - 0.48) * 0.05; 
       lastPrice *= (1 + changePercent);
-      if (lastPrice < 1) lastPrice = 1; 
+      if (lastPrice < 0.5) lastPrice = 0.5; // Prevent extremely low prices
 
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -157,7 +161,6 @@ export const generateMockStockAnalyses = (tickers: string[], startDateStr: strin
     const technicalIndicators = generateMockTechnicalIndicators(pricesOnly);
     const fundamentalMetrics = generateMockFundamentalMetrics(ticker, pricesOnly[pricesOnly.length -1]);
 
-    // Prepare data for individual chart
     const sma20Values = calculateSMA(pricesOnly, 20);
     const sma50Values = calculateSMA(pricesOnly, 50);
     const bbValues = calculateBollingerBands(pricesOnly, 20, 2);
@@ -172,22 +175,12 @@ export const generateMockStockAnalyses = (tickers: string[], startDateStr: strin
       bbLower: bbValues.lower[index],
     }));
     
-    // Mock sentiment (can be replaced by actual API call results later)
-    const mockSentimentReport: StockSentimentReport = {
-        ticker,
-        overallSentiment: [Sentiment.Positive, Sentiment.Neutral, Sentiment.Negative][Math.floor(Math.random()*3)],
-        headlines: [
-            {text: `Notícias positivas para ${ticker} impulsionam perspectivas.`, sentiment: Sentiment.Positive},
-            {text: `${ticker} permanece estável em meio à volatilidade do mercado.`, sentiment: Sentiment.Neutral},
-            {text: `Preocupações sobre o próximo relatório de lucros de ${ticker}.`, sentiment: Sentiment.Negative},
-        ].sort(() => .5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 1) // 1 to 2 headlines
-    };
-
     results.push({ 
       ticker,
+      market: ticker.match(/[0-9]$/) ? 'BR' : 'US',
       companyName: (fundamentalMetrics.companyName?.value as string) || `${ticker} Corp.`,
       historicalPricePoints,
-      sentimentReport: mockSentimentReport, // This would ideally come from geminiService and be merged in App.tsx
+      // aiReport will be added after Gemini call
       technicalIndicators,
       fundamentalMetrics,
       individualChartData,
@@ -195,4 +188,18 @@ export const generateMockStockAnalyses = (tickers: string[], startDateStr: strin
   });
 
   return results;
+};
+
+// This function is illustrative for the homepage and would need a real API in a production app
+export const getMockTopTradedStocks = (): { usStocks: StockFullAnalysis[], brStocks: StockFullAnalysis[] } => {
+  const mockUSFull = generateMockStockAnalyses(['AAPL', 'MSFT', 'GOOG'], new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0])
+    .map(s => ({...s, aiReport: { ticker: s.ticker, companyOverview: "", financialHealthAnalysis: "", investmentOutlook: ""}})); // Add dummy aiReport
+  
+  const mockBRFull = generateMockStockAnalyses(['PETR4', 'VALE3', 'ITUB4'], new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0])
+    .map(s => ({...s, aiReport: { ticker: s.ticker, companyOverview: "", financialHealthAnalysis: "", investmentOutlook: ""}})); // Add dummy aiReport
+
+  return {
+    usStocks: mockUSFull.slice(0,3),
+    brStocks: mockBRFull.slice(0,3),
+  };
 };

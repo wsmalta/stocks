@@ -1,6 +1,6 @@
-
 {
-  "name": "Analisador de Ações Pro",
-  "description": "Uma aplicação web para analisar ações usando dados históricos e análise de sentimento de notícias com IA. Suporta monitoramento e comparação de múltiplos tickers de ações.",
-  "requestFramePermissions": []
+  "name": "Analisador de Investimentos AI",
+  "description": "Uma aplicação web para análise de ações dos mercados EUA e Brasil usando dados históricos (simulados) e análise de sentimento/perspectivas gerada por IA (Gemini). Suporta monitoramento e comparação de múltiplos tickers de ações. Interface em Português do Brasil.",
+  "requestFramePermissions": [],
+  "prompt": ""
 }

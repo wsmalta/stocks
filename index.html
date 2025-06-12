@@ -1,19 +1,65 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analisador de Ações Pro</title>
+  <title>Analisador de Investimentos AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @media print {
       body {
-        -webkit-print-color-adjust: exact; /* Chrome, Safari */
-        print-color-adjust: exact; /* Firefox, Edge */
+        background-color: white !important;
+        color: black !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-family: Arial, sans-serif !important; /* Consistent font for print */
       }
       .no-print {
         display: none !important;
+      }
+      #printable-report, #printable-report * {
+        background-color: white !important;
+        color: black !important;
+        border-color: #ccc !important;
+      }
+      /* Ensure chart elements are visible */
+      .recharts-cartesian-axis-tick-value tspan, .recharts-text, .recharts-legend-item-text {
+        fill: black !important;
+      }
+      .recharts-cartesian-grid line, .recharts-line-dots circle, .recharts-active-dot circle {
+         stroke: #888 !important; /* Ensure grid/dots are visible */
+      }
+      .recharts-line-curve {
+        stroke-width: 1.5px !important; /* Ensure lines are not too faint */
+      }
+
+      /* Handle gradient text for print */
+      .text-transparent.bg-clip-text {
+        color: black !important;
+        background-image: none !important;
+        -webkit-text-fill-color: black !important; /* Reset for WebKit */
+      }
+      h1, h2, h3, h4, h5, h6 {
+        color: black !important;
+      }
+      
+      /* Reset specific component styles that might interfere */
+      .bg-slate-800, .bg-slate-700\/50, .bg-slate-700\/30, .bg-gradient-to-br {
+        background: white !important;
+      }
+      .text-sky-300, .text-indigo-400, .text-slate-300, .text-slate-400, .text-gray-100,
+      .text-sky-400, .text-indigo-500, .text-slate-200, .text-slate-500,
+      .text-green-400, .text-red-400, .text-gray-400 {
+          color: black !important;
+      }
+      .border-slate-600, .border-slate-700, .border-green-500\/50, .border-gray-500\/50, .border-red-500\/50 {
+          border-color: #ccc !important;
+      }
+      /* Ensure button text is visible if any buttons accidentally get printed */
+      button {
+        color: black !important;
+        background: white !important;
+        border: 1px solid #ccc !important;
       }
     }
   </style>

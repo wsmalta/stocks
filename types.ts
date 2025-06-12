@@ -1,19 +1,17 @@
 
-export enum Sentiment {
-  Positive = 'Positivo',
-  Neutral = 'Neutro',
-  Negative = 'Negativo',
-}
+// Removed Sentiment enum as it's replaced by AI textual analysis
 
-export interface HeadlineSentiment {
+export interface HeadlineSentiment { // Kept if any part of mock data still uses it, but primary analysis changes
   text: string;
-  sentiment: Sentiment;
+  sentiment: string; // Generic sentiment string, e.g. 'Positivo', 'Neutro', 'Negativo'
 }
 
-export interface StockSentimentReport {
+// This structure is for the AI's direct response, per stock
+export interface AIStockReport {
   ticker: string;
-  overallSentiment: Sentiment;
-  headlines: HeadlineSentiment[];
+  companyOverview: string;
+  financialHealthAnalysis: string;
+  investmentOutlook: string;
 }
 
 export interface StockPricePoint {
@@ -21,18 +19,15 @@ export interface StockPricePoint {
   price: number;
 }
 
-export interface StockHistoricalData {
+export interface StockHistoricalData { // For potential future direct use, less used now with StockFullAnalysis
   ticker: string;
-  prices: StockPricePoint[]; // Renamed from 'historicalPrices' for clarity if used standalone
+  prices: StockPricePoint[];
 }
 
-// For Recharts general charts
 export interface ChartDataPoint {
   date: string; // Formatted for display
-  [ticker: string]: number | string; // e.g., AAPL: 150.00, MSFT: 300.00
+  [ticker: string]: number | string;
 }
-
-// --- New Types for Detailed Analysis ---
 
 export interface MovingAverageData {
   period: number;
@@ -40,7 +35,7 @@ export interface MovingAverageData {
 }
 
 export interface BollingerBandsData {
-  middleBand: number | null; // Typically 20-day SMA
+  middleBand: number | null;
   upperBand: number | null;
   lowerBand: number | null;
 }
@@ -52,17 +47,17 @@ export interface MACDData {
 }
 
 export interface TechnicalIndicatorsData {
-  smas: MovingAverageData[]; // e.g., [{ period: 20, value: 150.50 }, { period: 50, value: 145.20 }]
+  smas: MovingAverageData[];
   rsi: { period: 14, value: number | null, interpretation: string };
   macd: { values: MACDData, interpretation: string };
-  bollingerBands: { values: BollingerBandsData, interpretation: string }; // Interpretation for BBs overall
+  bollingerBands: { values: BollingerBandsData, interpretation: string };
 }
 
 export interface FundamentalMetric {
-  name: string;
+  name: string; // Localized name in display component
   value: string | number;
-  interpretation: string;
-  threshold?: string; // Optional e.g., "Ideal: < 1"
+  interpretation: string; // AI can provide richer interpretations
+  threshold?: string;
 }
 
 export interface FundamentalMetricsData {
@@ -71,29 +66,39 @@ export interface FundamentalMetricsData {
   pbRatio: FundamentalMetric;
   debtToEquity: FundamentalMetric;
   currentRatio: FundamentalMetric;
-  roe: FundamentalMetric; // Return on Equity
-  eps: FundamentalMetric; // Earnings Per Share
+  roe: FundamentalMetric;
+  eps: FundamentalMetric;
   marketCap: FundamentalMetric;
-  companyName?: FundamentalMetric; // Added for display
+  dividendYield: FundamentalMetric; // Added
+  companyName?: FundamentalMetric; 
 }
 
-// Data structure for the new IndividualStockChart
 export interface IndividualChartDataPoint {
-  date: string; // YYYY-MM-DD or formatted display string
+  date: string;
   price: number | null;
   sma20?: number | null;
   sma50?: number | null;
   bbUpper?: number | null;
-  bbMiddle?: number | null; // Same as sma20 usually
+  bbMiddle?: number | null;
   bbLower?: number | null;
 }
 
+// Combined structure for each analyzed stock
 export interface StockFullAnalysis {
   ticker: string;
-  companyName: string; // Mocked company name
-  historicalPricePoints: StockPricePoint[]; // Raw historical prices
-  sentimentReport: StockSentimentReport;
+  market?: 'US' | 'BR'; // Optional: to help with ticker specific logic if needed
+  companyName: string;
+  historicalPricePoints: StockPricePoint[];
+  aiReport: AIStockReport; // Replaces sentimentReport
   technicalIndicators: TechnicalIndicatorsData;
   fundamentalMetrics: FundamentalMetricsData;
-  individualChartData: IndividualChartDataPoint[]; // Pre-calculated for the individual chart
+  individualChartData: IndividualChartDataPoint[];
+}
+
+// For the mocked homepage table
+export interface TopTradedStock {
+  ticker: string;
+  companyName: string;
+  dailyChange: string; // e.g., "+1.25%" or "-0.50%"
+  market: 'US' | 'BR';
 }

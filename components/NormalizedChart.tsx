@@ -3,6 +3,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartDataPoint } from '../types';
 import { CHART_COLORS } from '../constants';
+import { ptBR } from '../translations';
 
 interface NormalizedChartProps {
   data: ChartDataPoint[];
@@ -17,7 +18,7 @@ export const NormalizedChart: React.FC<NormalizedChartProps> = ({ data, tickers 
   return (
     <section className="p-6 bg-slate-800 rounded-xl shadow-2xl h-[500px]">
       <h2 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">
-        Desempenho Normalizado (Base 100)
+        {ptBR.normalizedPerformance}
       </h2>
       <ResponsiveContainer width="100%" height="85%">
         <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>

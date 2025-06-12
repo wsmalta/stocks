@@ -1,122 +1,134 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { StockSentimentReport, Sentiment } from '../types';
+import { AIStockReport, StockFullAnalysis, FundamentalMetricsData, TechnicalIndicatorsData } from '../types';
 import { GEMINI_MODEL_TEXT } from '../constants';
+import { ptBR } from '../translations';
 
-// Ensure process.env.API_KEY is available or provide a fallback for environments where it might not be set during generation.
-// In a real build, this would be handled by environment variable injection.
+
 const API_KEY = process.env.API_KEY || "YOUR_API_KEY_HERE"; 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-function isValidSentiment(sentiment: string): sentiment is Sentiment {
-  return Object.values(Sentiment).includes(sentiment as Sentiment);
-}
-
-function isValidReportStructure(item: any): item is StockSentimentReport {
+function isValidAIReportStructure(item: any): item is AIStockReport {
     return typeof item.ticker === 'string' &&
-           isValidSentiment(item.overallSentiment) &&
-           Array.isArray(item.headlines) &&
-           item.headlines.every((h: any) => 
-             typeof h.text === 'string' && isValidSentiment(h.sentiment)
-           );
+           typeof item.companyOverview === 'string' &&
+           typeof item.financialHealthAnalysis === 'string' &&
+           typeof item.investmentOutlook === 'string';
 }
 
+const generateFallbackReport = (ticker: string): AIStockReport => ({
+  ticker,
+  companyOverview: ptBR.noAIReportData,
+  financialHealthAnalysis: ptBR.noAIReportData,
+  investmentOutlook: ptBR.noAIReportData,
+});
 
-export const fetchSentimentData = async (tickers: string[], startDate: string): Promise<StockSentimentReport[]> => {
+export const fetchAIAnalysisForStock = async (
+  ticker: string, 
+  fundamentalMetrics: FundamentalMetricsData, 
+  technicalIndicators: TechnicalIndicatorsData,
+  companyName: string
+): Promise<AIStockReport> => {
   if (API_KEY === "YOUR_API_KEY_HERE" && !(process.env.API_KEY && process.env.API_KEY !== "YOUR_API_KEY_HERE")) {
-    console.warn("Usando chave de API de placeholder para o Gemini ou API_KEY não está efetivamente configurada. Por favor, garanta que process.env.API_KEY está configurado corretamente para chamadas reais à API. Recorrendo a dados simulados para sentimento.");
-    return tickers.map(ticker => ({
+    console.warn(`Using placeholder API Key for Gemini for ${ticker}. Falling back to mock AI report.`);
+    return {
         ticker,
-        overallSentiment: Sentiment.Neutral,
-        headlines: [
-            { text: `Manchete simulada: Análise de sentimento para ${ticker} apareceria aqui (Chave de API não configurada).`, sentiment: Sentiment.Neutral },
-            { text: `Simulado positivo: ${ticker} mostra sinais promissores.`, sentiment: Sentiment.Positive },
-            { text: `Simulado negativo: ${ticker} enfrenta desafios.`, sentiment: Sentiment.Negative },
-        ].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random()*2)+1)
-    }));
+        companyOverview: `Visão geral simulada para ${companyName} (${ticker}): Empresa líder em seu setor com foco em inovação. (API Key não configurada).`,
+        financialHealthAnalysis: `Análise de saúde financeira simulada para ${ticker}: Apresenta indicadores fundamentalistas mistos, com P/L de ${fundamentalMetrics.peRatio.value} e ROE de ${fundamentalMetrics.roe.value}%. (API Key não configurada).`,
+        investmentOutlook: `Perspectiva de investimento simulada para ${ticker}: Potencial de crescimento a longo prazo, mas com riscos de mercado a serem considerados. (API Key não configurada).`,
+    };
   }
 
-  const tickerListString = tickers.join(', ');
-  const prompt = `
-Para cada um dos seguintes tickers de ações: ${tickerListString}, por favor, atue como um sumarizador de notícias financeiras.
-1. Gere de 1 a 3 manchetes de notícias realistas e com sonoridade recente para cada ticker. Se não houver notícias específicas, gere uma manchete neutra placeholder.
-2. Para cada manchete, determine seu sentimento (Positivo, Neutro ou Negativo).
-3. Forneça um sentimento geral (Positivo, Neutro ou Negativo) para cada ticker de ação com base nessas manchetes. Se as manchetes forem mistas ou neutras, o sentimento geral deve refletir isso.
-A data de início para consideração das notícias é ${startDate}, e a data final é hoje.
+  // Sanitize data slightly for the prompt - focusing on key values
+  const fundamentalsSummary = `
+    Nome da Empresa: ${companyName},
+    P/L: ${fundamentalMetrics.peRatio.value},
+    ROE: ${fundamentalMetrics.roe.value}%,
+    Dívida/Patrimônio: ${fundamentalMetrics.debtToEquity.value},
+    Dividend Yield: ${fundamentalMetrics.dividendYield.value}%`;
+  
+  const technicalsSummary = `
+    IFR(14): ${technicalIndicators.rsi.value?.toFixed(2)} (${technicalIndicators.rsi.interpretation}),
+    MACD Histograma: ${technicalIndicators.macd.values.histogram?.toFixed(2)} (${technicalIndicators.macd.interpretation}),
+    MMS(20): ${technicalIndicators.smas.find(s=>s.period===20)?.value?.toFixed(2)},
+    MMS(50): ${technicalIndicators.smas.find(s=>s.period===50)?.value?.toFixed(2)}`;
 
-Por favor, forneça a saída em formato de array JSON, onde cada objeto no array representa uma ação e tem a seguinte estrutura:
+  const prompt = `
+Para a ação com ticker ${ticker} (${companyName}), com base nos seguintes dados financeiros e técnicos (simulados):
+Dados Fundamentais: ${fundamentalsSummary}
+Dados Técnicos: ${technicalsSummary}
+
+Por favor, gere uma análise concisa para um investidor individual em PORTUGUÊS DO BRASIL.
+A análise deve incluir:
+1.  "companyOverview": Uma breve visão geral da empresa e seu setor de atuação principal (1-2 frases).
+2.  "financialHealthAnalysis": Uma análise da saúde financeira da empresa com base nos dados fornecidos (2-3 frases).
+3.  "investmentOutlook": Uma perspectiva de investimento, destacando potenciais pontos fortes e fracos (2-3 frases).
+
+Responda SOMENTE com um objeto JSON válido contendo as chaves "ticker", "companyOverview", "financialHealthAnalysis", e "investmentOutlook".
+Não inclua nenhuma introdução, explicação ou formatação markdown (como \`\`\`json).
+Exemplo de formato esperado:
 {
-  "ticker": "TICKER_DA_ACAO",
-  "overallSentiment": "Positivo" | "Neutro" | "Negativo",
-  "headlines": [
-    { "text": "Texto da Manchete 1...", "sentiment": "Positivo" | "Neutro" | "Negativo" }
-  ]
+  "ticker": "${ticker}",
+  "companyOverview": "...",
+  "financialHealthAnalysis": "...",
+  "investmentOutlook": "..."
 }
-Certifique-se de que o JSON é válido. Não inclua nenhum texto explicativo antes ou depois do array JSON.
-Apenas envie o array JSON. Cada ticker deve ter uma entrada na resposta.
 `;
 
-  let jsonStr = ''; 
+  let jsonStr = '';
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
         model: GEMINI_MODEL_TEXT,
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            temperature: 0.5, 
+            temperature: 0.6, 
         }
     });
 
     jsonStr = response.text.trim();
-    const fenceRegex = /^```(?:json)?\s*\n?(.*?)\n?\s*```$/s;
-    const match = jsonStr.match(fenceRegex);
-    if (match && match[1]) {
-      jsonStr = match[1].trim();
+    // No need to strip markdown fences if responseMimeType: "application/json" works as expected
+    // However, as a fallback, keeping a simplified check:
+    if (jsonStr.startsWith("```json")) {
+        jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
+    } else if (jsonStr.startsWith("```")) {
+         jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
     }
     
     const parsedData = JSON.parse(jsonStr);
 
-    if (Array.isArray(parsedData) && parsedData.every(isValidReportStructure)) {
-      const resultReports: StockSentimentReport[] = [];
-      // const receivedTickers = new Set(parsedData.map(p => p.ticker.toUpperCase())); // Not strictly needed with the loop below
-
-      tickers.forEach(requestedTicker => {
-        const report = parsedData.find(p => p.ticker.toUpperCase() === requestedTicker.toUpperCase());
-        if (report) {
-          resultReports.push(report);
-        } else {
-          // Add a placeholder if Gemini didn't return data for a specific ticker
-          resultReports.push({
-            ticker: requestedTicker,
-            overallSentiment: Sentiment.Neutral,
-            headlines: [{ text: `IA não conseguiu recuperar sentimento de notícias específico para ${requestedTicker}. Condições gerais de mercado podem se aplicar.`, sentiment: Sentiment.Neutral }]
-          });
-        }
-      });
-      return resultReports;
-
+    if (isValidAIReportStructure(parsedData)) {
+      // Ensure the ticker matches, as a safety check, or override if Gemini might change it
+      parsedData.ticker = ticker; 
+      return parsedData;
     } else {
-        console.error("Estrutura JSON inválida recebida da API após o parsing. Dados:", parsedData);
+        console.error(`Invalid JSON structure received from API for ${ticker}. Data:`, parsedData);
         if (jsonStr) {
-             console.error("String original (após remoção da cerca) que levou à estrutura inválida:", jsonStr);
+             console.error("Original string that led to invalid structure:", jsonStr);
         }
-        throw new Error("Recebida estrutura de dados inválida da API de análise de sentimento.");
+        throw new Error(`Received invalid data structure for ${ticker} from AI analysis API.`);
     }
 
   } catch (error) {
-    console.error("Erro ao buscar ou parsear dados de sentimento da API Gemini.");
+    console.error(`Error fetching or parsing AI analysis for ${ticker}.`);
     if (jsonStr) { 
-        console.error("String JSON problemática recebida da API (após remoção da cerca, antes da tentativa de parsing):", jsonStr);
+        console.error("Problematic JSON string received (before parsing attempt):", jsonStr);
     }
-    console.error("Erro detalhado:", error);
-
-    console.warn(`Recorrendo a dados de sentimento simulados para os tickers: ${tickers.join(', ')} devido a erro na API.`);
-     return tickers.map(ticker => ({
-        ticker,
-        overallSentiment: Sentiment.Neutral,
-        headlines: [
-            { text: `Erro ao buscar/parsear sentimento de notícias por IA para ${ticker}. Exibindo dados de placeholder.`, sentiment: Sentiment.Neutral },
-        ]
-    }));
+    console.error("Detailed error:", error);
+    console.warn(`Falling back to placeholder AI report for ${ticker} due to API error.`);
+    return generateFallbackReport(ticker);
   }
+};
+
+export const fetchAIAnalysisForAllStocks = async (partialAnalyses: Omit<StockFullAnalysis, 'aiReport'>[]): Promise<AIStockReport[]> => {
+    const reports: AIStockReport[] = [];
+    for (const stockData of partialAnalyses) {
+        const report = await fetchAIAnalysisForStock(
+            stockData.ticker,
+            stockData.fundamentalMetrics,
+            stockData.technicalIndicators,
+            stockData.companyName
+        );
+        reports.push(report);
+    }
+    return reports;
 };

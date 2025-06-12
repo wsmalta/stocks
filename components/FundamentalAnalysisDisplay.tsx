@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { FundamentalMetricsData, FundamentalMetric } from '../types';
+import { ptBR } from '../translations';
 
 interface FundamentalAnalysisDisplayProps {
   metrics: FundamentalMetricsData;
@@ -19,7 +20,6 @@ const MetricItem: React.FC<{ metric: FundamentalMetric }> = ({ metric }) => (
 );
 
 export const FundamentalAnalysisDisplay: React.FC<FundamentalAnalysisDisplayProps> = ({ metrics }) => {
-  // Order matters for display
   const displayMetrics: FundamentalMetric[] = [
     metrics.marketCap,
     metrics.peRatio,
@@ -29,11 +29,12 @@ export const FundamentalAnalysisDisplay: React.FC<FundamentalAnalysisDisplayProp
     metrics.roe,
     metrics.debtToEquity,
     metrics.currentRatio,
-  ].filter(m => m); // Filter out any potentially undefined metrics if structure changes
+    metrics.dividendYield, // Added
+  ].filter(m => m); 
 
   return (
     <div className="space-y-3">
-      <h4 className="text-xl font-semibold text-indigo-400 mb-3">Métricas Fundamentais</h4>
+      <h4 className="text-xl font-semibold text-indigo-400 mb-3">{ptBR.fundamentalMetrics}</h4>
       <div className="space-y-2">
         {displayMetrics.map((metric) => (
           metric ? <MetricItem key={metric.name} metric={metric} /> : null
