@@ -1,0 +1,6 @@
+
+{
+  "name": "Analisador de Ações Pro",
+  "description": "Uma aplicação web para analisar ações usando dados históricos e análise de sentimento de notícias com IA. Suporta monitoramento e comparação de múltiplos tickers de ações.",
+  "requestFramePermissions": []
+}
